@@ -1,0 +1,44 @@
+# ---------------------------
+# Turborepo / Monorepo
+# ---------------------------
+.turbo/
+*.log
+
+# ---------------------------
+# Dependencies
+# ---------------------------
+node_modules/
+.pnpm-store/
+.pnp.cjs
+.pnp.loader.mjs
+.ignored_node_modules/
+
+# ---------------------------
+# Build outputs
+# ---------------------------
+dist/
+.next/
+out/
+coverage/
+build/
+
+# ---------------------------
+# Environment
+# ---------------------------
+.env
+.env.local
+.env.*.local
+
+# ---------------------------
+# OS / Editor
+# ---------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---------------------------
+# Misc
+# ---------------------------
+tree.txt
+*.tsbuildinfo

@@ -1,0 +1,23 @@
+﻿{
+  "name": "@devconnect/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.12.2",
+    "@as-integrations/fastify": "^3.0.0",
+    "@fastify/cors": "^11.1.0",
+    "fastify": "^5.6.0",
+    "graphql": "^16.11.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
