@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String
+  passwordHash  String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  memberships   Membership[]
+  messages      Message[]       @relation("UserMessages")
+  createdTasks  Task[]          @relation("TaskCreator") // tasks authored by this user
+  taskAssignees TaskAssignee[]  // tasks assigned to this user
+}
+
+model Team {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  projects  Project[]
+  members   Membership[]
+}
+
+model Membership {
+  id     String @id @default(cuid())
+  role   Role
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId String
+
+  @@unique([userId, teamId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  key       String
+  createdAt DateTime  @default(now())
+
+  team      Team      @relation(fields: [teamId], references: [id])
+  teamId    String
+
+  documents Document[]
+  channels  Channel[]
+  tasks     Task[]
+
+  @@index([teamId])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @default("") // later move to CRDT storage
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+
+  @@index([projectId])
+}
+
+model Channel {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+
+  messages  Message[]
+
+  @@index([projectId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+
+  channel   Channel  @relation(fields: [channelId], references: [id])
+  channelId String
+
+  author    User     @relation("UserMessages", fields: [authorId], references: [id])
+  authorId  String
+
+  @@index([channelId])
+}
+
+model Task {
+  id          String      @id @default(cuid())
+  title       String
+  description String      @default("")
+  status      TaskStatus  @default(TODO)
+  priority    Int         @default(0)
+  dueAt       DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  project     Project     @relation(fields: [projectId], references: [id])
+  projectId   String
+
+  createdBy   User        @relation("TaskCreator", fields: [createdById], references: [id])
+  createdById String
+
+  assignees   TaskAssignee[]
+  labels      TaskLabel[]
+
+  @@index([projectId])
+}
+
+enum TaskStatus {
+  TODO
+  DOING
+  DONE
+}
+
+model TaskAssignee {
+  task   Task  @relation(fields: [taskId], references: [id])
+  taskId String
+  user   User  @relation(fields: [userId], references: [id])
+  userId String
+
+  @@id([taskId, userId])
+}
+
+model TaskLabel {
+  id     String @id @default(cuid())
+  label  String
+
+  task   Task   @relation(fields: [taskId], references: [id])
+  taskId String
+
+  @@index([taskId])
+}

@@ -1,8 +1,8 @@
 'use client';
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useMemo } from "react";
 import { ApolloProvider } from "@apollo/client/react";
-import { makeClient } from '@/lib/apollo';
+import { getApolloClient } from '@/lib/apollo';
 export default function Providers({ children }: PropsWithChildren) {
-    const client = makeClient();
+    const client = useMemo(() => getApolloClient(), []);
     return <ApolloProvider client={client}>{children}</ApolloProvider>;
 }
