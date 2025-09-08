@@ -1,7 +1,9 @@
 import type { Ctx } from './context';
 import { compare, hash } from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { pubsub, MSG_TOPIC } from './pubsub'; // <-- pub/sub
 
+// ---- helpers ----
 const requireAuth = (ctx: Ctx) => {
   if (!ctx.userId) throw new Error('UNAUTHENTICATED');
   return ctx.userId;
@@ -19,15 +21,16 @@ async function isTeamAdmin(ctx: Ctx, teamId: string) {
     where: { userId_teamId: { userId, teamId } },
     select: { role: true },
   });
-  return m && (m.role === 'OWNER' || m.role === 'ADMIN');
+  return !!m && (m.role === 'OWNER' || m.role === 'ADMIN');
 }
 
+// ---- resolvers ----
 export const resolvers = {
   Query: {
     currentUser: (_: unknown, __: unknown, ctx: Ctx) =>
       ctx.userId ? ctx.prisma.user.findUnique({ where: { id: ctx.userId } }) : null,
 
-    // Only teams the user is in
+    // only teams the user belongs to
     teams: async (_: unknown, __: unknown, ctx: Ctx) => {
       const userId = requireAuth(ctx);
       return ctx.prisma.team.findMany({
@@ -56,11 +59,11 @@ export const resolvers = {
 
     documents: async (_: unknown, { projectId }: { projectId: string }, ctx: Ctx) => {
       const userId = requireAuth(ctx);
-      const project = await ctx.prisma.project.findFirst({
+      const ok = await ctx.prisma.project.findFirst({
         where: { id: projectId, team: { members: { some: { userId } } } },
         select: { id: true },
       });
-      if (!project) throw new Error('FORBIDDEN');
+      if (!ok) throw new Error('FORBIDDEN');
       return ctx.prisma.document.findMany({ where: { projectId }, orderBy: { updatedAt: 'desc' } });
     },
 
@@ -87,7 +90,7 @@ export const resolvers = {
       if (!ok) throw new Error('FORBIDDEN');
       return ctx.prisma.message.findMany({
         where: { channelId },
-        orderBy: { createdAt: 'asc' }, // typical chat ordering
+        orderBy: { createdAt: 'asc' },
         take: limit ?? 50,
       });
     },
@@ -178,11 +181,19 @@ export const resolvers = {
       const userId = requireAuth(ctx);
       const ok = await ctx.prisma.channel.findFirst({
         where: { id: input.channelId, project: { team: { members: { some: { userId } } } } },
+        select: { id: true },
       });
       if (!ok) throw new Error('FORBIDDEN');
-      return ctx.prisma.message.create({
+
+      const message = await ctx.prisma.message.create({
         data: { channelId: input.channelId, body: input.body, authorId: userId },
+        include: { author: true },
       });
+
+      // publish to channel-specific topic
+      await pubsub.publish(MSG_TOPIC(input.channelId), { messageAdded: message });
+
+      return message as any;
     },
 
     addTask: async (_: unknown, { input }: any, ctx: Ctx) => {
@@ -205,10 +216,15 @@ export const resolvers = {
 
     updateTask: async (_: unknown, { input }: any, ctx: Ctx) => {
       const userId = requireAuth(ctx);
-      // Ensure access
       const task = await ctx.prisma.task.findUnique({
         where: { id: input.id },
-        select: { project: { select: { team: { select: { members: { where: { userId }, select: { id: true } } } } } } },
+        select: {
+          project: {
+            select: {
+              team: { select: { members: { where: { userId }, select: { id: true } } } },
+            },
+          },
+        },
       });
       if (!task?.project.team.members.length) throw new Error('FORBIDDEN');
 
@@ -221,10 +237,15 @@ export const resolvers = {
 
     assignTask: async (_: unknown, { input }: any, ctx: Ctx) => {
       const userId = requireAuth(ctx);
-      // Ensure access
       const task = await ctx.prisma.task.findUnique({
         where: { id: input.taskId },
-        select: { project: { select: { team: { select: { members: { where: { userId }, select: { id: true } } } } } } },
+        select: {
+          project: {
+            select: {
+              team: { select: { members: { where: { userId }, select: { id: true } } } },
+            },
+          },
+        },
       });
       if (!task?.project.team.members.length) throw new Error('FORBIDDEN');
 
@@ -237,7 +258,16 @@ export const resolvers = {
     },
   },
 
-  // Field resolvers
+ Subscription: {
+  messageAdded: {
+    subscribe: (_: unknown, { channelId }: { channelId: string }) =>
+      // v3 API:
+      pubsub.asyncIterableIterator(MSG_TOPIC(channelId)),
+    // resolve: (payload: any) => payload.messageAdded, // optional; default works
+  },
+},
+
+  // field resolvers
   Message: {
     author: (m: any, _args: unknown, ctx: Ctx) =>
       ctx.prisma.user.findUnique({ where: { id: m.authorId } }),
@@ -249,7 +279,7 @@ export const resolvers = {
         where: { taskId: t.id },
         include: { user: true },
       });
-      return rows.map(r => r.user);
+      return rows.map((r) => r.user);
     },
   },
 };

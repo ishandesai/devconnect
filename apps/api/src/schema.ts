@@ -1,6 +1,5 @@
 export const typeDefs = `#graphql
   scalar DateTime
-
   enum Role { OWNER ADMIN MEMBER GUEST }
   enum TaskStatus { TODO DOING DONE }
 
@@ -16,10 +15,8 @@ export const typeDefs = `#graphql
 
   input SignUpInput { email: String!, name: String!, password: String! }
   input SignInInput { email: String!, password: String! }
-
   input CreateTeamInput { name: String!, slug: String! }
   input AddMemberInput { teamId: ID!, userId: ID!, role: Role! }
-
   input CreateProjectInput { teamId: ID!, name: String!, key: String! }
   input CreateDocumentInput { projectId: ID!, title: String!, content: String }
   input CreateChannelInput { projectId: ID!, name: String! }
@@ -50,9 +47,12 @@ export const typeDefs = `#graphql
     createDocument(input: CreateDocumentInput!): Document!
     createChannel(input: CreateChannelInput!): Channel!
     sendMessage(input: SendMessageInput!): Message!
-
     addTask(input: AddTaskInput!): Task!
     updateTask(input: UpdateTaskInput!): Task!
     assignTask(input: AssignTaskInput!): Task!
+  }
+
+  type Subscription {
+    messageAdded(channelId: ID!): Message!
   }
 `;
