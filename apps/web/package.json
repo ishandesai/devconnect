@@ -1,12 +1,32 @@
 {
   "name": "@devconnect/web",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "analyze": "cross-env ANALYZE=true next build",
+    "analyze:start": "cross-env ANALYZE=true next build && next start -p 3000",
+    "perf:test": "node scripts/performance-test.js",
+    "perf:lighthouse": "lhci autorun",
+    "perf:full": "npm run build && npm run start & sleep 5 && npm run perf:test && npm run perf:lighthouse"
+  },
+  "browserslist": {
+    "production": [
+      "supports es6-module",
+      "last 2 Chrome versions",
+      "last 2 Edge versions",
+      "last 2 Firefox versions",
+      "last 2 Safari versions",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
   },
   "dependencies": {
     "@apollo/client": "^4.0.4",
@@ -17,8 +37,20 @@
     "@liveblocks/react-ui": "^3.7.1",
     "@liveblocks/yjs": "^3.7.1",
     "@tiptap/core": "^2.26.1",
+    "@tiptap/extension-blockquote": "2.26.1",
+    "@tiptap/extension-bold": "2.26.1",
+    "@tiptap/extension-bullet-list": "2.26.1",
+    "@tiptap/extension-code-block": "2.26.1",
     "@tiptap/extension-collaboration": "^2.26.1",
     "@tiptap/extension-collaboration-cursor": "^2.26.1",
+    "@tiptap/extension-document": "2.26.1",
+    "@tiptap/extension-heading": "2.26.1",
+    "@tiptap/extension-italic": "2.26.1",
+    "@tiptap/extension-list-item": "2.26.1",
+    "@tiptap/extension-ordered-list": "2.26.1",
+    "@tiptap/extension-paragraph": "2.26.1",
+    "@tiptap/extension-strike": "2.26.1",
+    "@tiptap/extension-text": "2.26.1",
     "@tiptap/pm": "^2.26.1",
     "@tiptap/react": "^2.26.1",
     "@tiptap/starter-kit": "^2.26.1",
@@ -26,7 +58,7 @@
     "@tiptap/y-tiptap": "3.0.0-beta.3",
     "graphql": "^16.11.0",
     "graphql-ws": "^6.0.6",
-    "next": "^15.5.3",
+    "next": "15.6.0-canary.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "web-vitals": "^5.1.0",
@@ -34,6 +66,7 @@
     "yjs": "^13.6.27"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
     "@next/bundle-analyzer": "^15.5.3",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^20.19.15",
@@ -41,7 +74,10 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.0.0",
+    "lighthouse": "^12.8.2",
     "postcss": "^8.5.6",
+    "puppeteer": "^24.21.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2"
   }
