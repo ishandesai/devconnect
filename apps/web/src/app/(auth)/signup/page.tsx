@@ -4,9 +4,20 @@ import { SIGN_UP } from '@/lib/graphql';
 import { saveToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
+interface SignUpResponse {
+  signUp: {
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      name: string;
+    };
+  };
+}
+
 export default function Signup() {
   const r = useRouter();
-  const [mut, { loading, error }] = useMutation(SIGN_UP, {
+  const [mut, { loading, error }] = useMutation<SignUpResponse>(SIGN_UP, {
     onCompleted: (d) => {
       saveToken(d.signUp.token);
       r.push('/dashboard');

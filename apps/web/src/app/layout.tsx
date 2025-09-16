@@ -1,14 +1,21 @@
-import Providers from "./providers";
-import "./globals.css";
+import '@liveblocks/react-ui/styles.css';
+import '@liveblocks/react-tiptap/styles.css';
+import './globals.css';
+
+import LBProvider from '@/lib/liveblocks';
+import Providers from './providers';
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <Providers>{children}</Providers>
+        <LBProvider>
+          <Providers>{children}</Providers>
+        </LBProvider>
       </body>
     </html>
   );

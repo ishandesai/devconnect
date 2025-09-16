@@ -1,11 +1,9 @@
 'use client';
 
-import { use } from 'react';
+import { useParams } from 'next/navigation';
 import ChatPanel from '@/components/ChatPanel';
 
-type Params = { teamId: string; projectId: string };
-
-export default function Chat({ params }: { params: Promise<Params> }) {
-    const { projectId } = use(params);
+export default function Chat() {
+  const { projectId } = useParams<{ teamId: string; projectId: string }>();
   return <ChatPanel projectId={projectId} />;
 }

@@ -8,35 +8,41 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
-  "eslintConfig": {
-    "extends": [
-      "next/core-web-vitals",
-      "@repo/eslint-config"
-    ]
-  },
   "dependencies": {
     "@apollo/client": "^4.0.4",
-    "@tiptap/core": "^3",
-    "@tiptap/extension-collaboration": "^3",
-    "@tiptap/extension-collaboration-cursor": "^3",
-    "@tiptap/react": "^3.4.1",
-    "@tiptap/starter-kit": "^3.4.1",
+    "@hocuspocus/provider": "^3.2.3",
+    "@liveblocks/client": "^3.7.1",
+    "@liveblocks/react": "^3.7.1",
+    "@liveblocks/react-tiptap": "3.7.1",
+    "@liveblocks/react-ui": "^3.7.1",
+    "@liveblocks/yjs": "^3.7.1",
+    "@tiptap/core": "^2.26.1",
+    "@tiptap/extension-collaboration": "^2.26.1",
+    "@tiptap/extension-collaboration-cursor": "^2.26.1",
+    "@tiptap/pm": "^2.26.1",
+    "@tiptap/react": "^2.26.1",
+    "@tiptap/starter-kit": "^2.26.1",
+    "@tiptap/suggestion": "^2.7.2",
+    "@tiptap/y-tiptap": "3.0.0-beta.3",
     "graphql": "^16.11.0",
     "graphql-ws": "^6.0.6",
-    "next": "^15.5.2",
+    "next": "^15.5.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "web-vitals": "^5.1.0",
     "y-websocket": "^3.0.0",
     "yjs": "^13.6.27"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.13",
-    "@types/node": "^20.19.13",
+    "@next/bundle-analyzer": "^15.5.3",
+    "@tailwindcss/typography": "^0.5.16",
+    "@types/node": "^20.19.15",
     "@types/randomcolor": "^0.5.9",
-    "@types/react": "^19.1.12",
+    "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.13",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2"
   }
 }
