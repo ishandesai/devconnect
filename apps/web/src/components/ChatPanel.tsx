@@ -9,16 +9,11 @@ import {
   SEND_MESSAGE,
   CREATE_CHANNEL,
   MESSAGE_ADDED,
+  // types only (from your TypedDocumentNodes)
   type ChannelsQuery,
   type ChannelsVariables,
   type MessagesQuery,
   type MessagesVariables,
-  type SendMessageMutation,
-  type SendMessageVariables,
-  type CreateChannelMutation,
-  type CreateChannelVariables,
-  type MessageAddedSubscription,
-  type MessageAddedVariables,
 } from '@/lib/graphql';
 
 import { Card } from '@/components/ui/Card';
@@ -32,63 +27,52 @@ type Channel = ChannelsQuery['channels'][number];
 type ChatMessage = MessagesQuery['messages'][number];
 
 export default function ChatPanel({ projectId }: { projectId: string }) {
-  // Channels
+  // Channels list (TypedDocumentNode → types inferred)
   const { data: cdata } = useQuery(CHANNELS, { variables: { projectId } });
   const channels = cdata?.channels ?? [];
 
   const [channelId, setChannelId] = useState<ID | null>(null);
 
-  // ✅ Let types infer from TypedDocumentNode and only add `variables` when defined
-// ✅ Always pass variables; skip prevents any network call when channelId is null
-const {
-  data,
-  loading,
-  subscribeToMore,
-} = useQuery(MESSAGES, {
-  variables: { channelId: (channelId ?? '') as string }, // <-- always present
-  skip: !channelId,                                      // <-- prevents usage
-  fetchPolicy: 'cache-and-network',
-});
+  // Messages for the selected channel
+  const { data, loading, subscribeToMore } = useQuery(MESSAGES, {
+    variables: { channelId: channelId ?? '' },
+    skip: !channelId, // avoid network call until we have a channelId
+    fetchPolicy: 'cache-and-network',
+  });
 
-
-  // ✅ Return full MessagesQuery from updateQuery; avoid DeepPartial by building a base
+  // Live updates (subscription) using subscribeToMore; types inferred from docs
   useEffect(() => {
     if (!channelId) return;
-  
-    const unsubscribe = subscribeToMore<MessageAddedSubscription, MessageAddedVariables>({
+
+    const unsubscribe = subscribeToMore({
       document: MESSAGE_ADDED,
       variables: { channelId },
       onError: console.error,
       updateQuery: (prev, { subscriptionData }) => {
         const next = subscriptionData.data?.messageAdded;
-  
+
         // Make a concrete list (not DeepPartial)
         const baseList = ((prev?.messages ?? []) as MessagesQuery['messages']).filter(
           (m): m is MessagesQuery['messages'][number] => Boolean(m)
         );
-  
+
         if (!next) return { messages: baseList };
         if (baseList.some((m) => m.id === next.id)) return { messages: baseList };
-  
+
         return { messages: [...baseList, next] };
       },
     });
-  
+
     return () => unsubscribe();
   }, [channelId, subscribeToMore]);
-  
 
-  // Mutations
-  const [send] = useMutation<SendMessageMutation, SendMessageVariables>(SEND_MESSAGE, {
-    onError: console.error,
+  // Mutations (TypedDocumentNode → no generics)
+  const [send] = useMutation(SEND_MESSAGE, { onError: console.error });
+  const [create] = useMutation(CREATE_CHANNEL, {
+    refetchQueries: [{ query: CHANNELS, variables: { projectId } }],
   });
 
-  const [create] = useMutation<CreateChannelMutation, CreateChannelVariables>(
-    CREATE_CHANNEL,
-    { refetchQueries: [{ query: CHANNELS, variables: { projectId } }] }
-  );
-
-  // Pick first channel by default
+  // Default to first channel when available
   useEffect(() => {
     if (!channelId && channels[0]) setChannelId(channels[0].id);
   }, [channels, channelId]);
@@ -121,9 +105,10 @@ const {
             size="sm"
             variant="primary"
             onClick={async () => {
-              const name = (prompt('Channel name?') || 'general').trim();
+              const name = prompt('Channel name?')?.trim();
               if (!name) return;
-              await create({ variables: { projectId, name } });
+              // ⬇️ top-level variables (schema expects $projectId, $name)
+              await create({ variables: {input: { projectId, name } } });
             }}
           >
             + New
@@ -205,7 +190,8 @@ const {
               const body = String(f.get('body') || '').trim();
               if (!body) return;
 
-              const optimistic: NonNullable<SendMessageMutation['sendMessage']> = {
+              // Optimistic result exactly matches the selection set of SEND_MESSAGE
+              const optimistic = {
                 __typename: 'Message',
                 id: `temp-${Date.now()}`,
                 body,
@@ -215,13 +201,12 @@ const {
                   id: 'me',
                   name: 'You',
                   email: '',
-                  createdAt: new Date().toISOString(),
                 },
-                channelId, // extra field is fine; not queried elsewhere
-              } as any;
+              };
 
               await send({
-                variables: { channelId, body },
+                // ⬇️ top-level variables (schema expects $channelId, $body)
+                variables: { input: { channelId, body } },
                 optimisticResponse: { sendMessage: optimistic },
                 update: (cache, { data }) => {
                   const newMsg = data?.sendMessage ?? optimistic;
@@ -259,7 +244,15 @@ const {
   );
 }
 
-function EmptyState({ emoji, title, subtitle }: { emoji: string; title: string; subtitle: string }) {
+function EmptyState({
+  emoji,
+  title,
+  subtitle,
+}: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+}) {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="text-center">

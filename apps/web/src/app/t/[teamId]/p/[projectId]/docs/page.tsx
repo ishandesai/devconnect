@@ -1,24 +1,10 @@
-'use client';
+// app/t/[teamId]/p/[projectId]/docs/page.tsx
+import type { ParamsPromise } from '@/types/route'
+import DocsClient from './DocsClient'
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { DocList } from '@/components/DocList';
-import { CollaborativeEditor } from '@/components/CollaborativeEditor';
+type RouteParams = { teamId: string; projectId: string }
 
-export default function Docs() {
-  const { projectId } = useParams<{ teamId: string; projectId: string }>();
-  const [openId, setOpenId] = useState<string | null>(null);
-
-  return (
-    <div className="flex h-full">
-      <DocList projectId={projectId} onOpen={setOpenId} />
-      <div className="flex-1">
-        {openId ? (
-          <CollaborativeEditor docId={openId} />
-        ) : (
-          <p className="p-4 text-sm text-gray-500">Select a document</p>
-        )}
-      </div>
-    </div>
-  );
+export default async function DocsPage({ params }: ParamsPromise<RouteParams>) {
+  const { projectId } = await params
+  return <DocsClient projectId={projectId} />
 }

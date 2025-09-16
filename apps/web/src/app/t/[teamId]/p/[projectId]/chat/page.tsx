@@ -1,9 +1,10 @@
-'use client';
+// app/t/[teamId]/p/[projectId]/chat/page.tsx
+import type { ParamsPromise } from '@/types/route'
+import ChatClient from './ChatClient'
 
-import { useParams } from 'next/navigation';
-import ChatPanel from '@/components/ChatPanel';
+type RouteParams = { teamId: string; projectId: string }
 
-export default function Chat() {
-  const { projectId } = useParams<{ teamId: string; projectId: string }>();
-  return <ChatPanel projectId={projectId} />;
+export default async function ChatPage({ params }: ParamsPromise<RouteParams>) {
+  const { projectId } = await params
+  return <ChatClient projectId={projectId} />
 }
