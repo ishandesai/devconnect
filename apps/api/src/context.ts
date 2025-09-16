@@ -1,4 +1,3 @@
-// src/context.ts
 import type { FastifyRequest } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -24,7 +23,6 @@ export function getUserIdFromAuthHeader(auth?: string): string | undefined {
   }
 }
 
-// Enhanced tenant isolation helpers
 export async function requireTeamAccess(
   ctx: Ctx,
   teamId: string

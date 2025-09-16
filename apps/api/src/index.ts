@@ -12,7 +12,6 @@ import { resolvers } from './resolvers';
 import { prisma, getUserIdFromAuthHeader, type Ctx } from './context';
 import { teamIdForDocument, assertTeamMember } from './tenant';
 
-// ✅ Liveblocks server SDK
 import { Liveblocks } from '@liveblocks/node';
 
 const liveblocks = new Liveblocks({
@@ -26,10 +25,8 @@ async function main() {
     credentials: true,
   });
 
-  // ✅ Build GraphQL schema once
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-  // ✅ Start Apollo once
   const apollo = new ApolloServer<Ctx>({ schema });
   await apollo.start();
 
@@ -43,7 +40,6 @@ async function main() {
 
   app.get('/healthz', async () => ({ ok: true }));
 
-  // ✅ Liveblocks auth endpoint (access token)
   app.post('/liveblocks-auth', async (request, reply) => {
     const { room } = (request.body as any) ?? {};
     const auth = request.headers.authorization as string | undefined;
@@ -57,11 +53,9 @@ async function main() {
     const docId = room.slice(4);
 
     try {
-      // Check team membership for the document
       const teamId = await teamIdForDocument({ prisma, userId }, docId);
       await assertTeamMember({ prisma, userId }, teamId);
     } catch (error) {
-      // If user is not a member of the document's team, deny access
       return reply.code(403).send({ error: 'FORBIDDEN' });
     }
 
@@ -69,18 +63,15 @@ async function main() {
       userInfo: { id: userId },
     });
 
-    // Full access to this room; wildcard patterns also supported
     session.allow(room, session.FULL_ACCESS);
 
-    // Access-token flow:
-    const { body, status } = await session.authorize(); // returns { token } body
+    const { body, status } = await session.authorize();
     reply.status(status).send(body);
   });
 
   const port = Number(process.env.PORT ?? 4000);
   await app.listen({ port, host: '0.0.0.0' });
 
-  // ✅ GraphQL over WebSocket subscriptions (graphql-ws)
   const wss = new WebSocketServer({ server: app.server, path: '/graphql' });
   useServer<Ctx>(
     {

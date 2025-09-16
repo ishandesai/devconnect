@@ -48,7 +48,6 @@ export function DocList({ projectId, onOpen, selectedDocId }: DocListProps) {
     const tempId = `temp-${Date.now()}`;
     const nowIso = new Date().toISOString();
 
-    // Strongly typed optimistic doc
     const optimisticDoc: CreateDocumentMutation['createDocument'] & {
       __typename: 'Document';
     } = {
@@ -57,7 +56,7 @@ export function DocList({ projectId, onOpen, selectedDocId }: DocListProps) {
       title,
       updatedAt: nowIso,
     };
-    
+
     try {
       await createDoc({
         variables: { projectId, title },

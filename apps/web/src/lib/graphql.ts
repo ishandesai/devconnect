@@ -1,14 +1,11 @@
-// queries.ts
 import { gql, type TypedDocumentNode } from '@apollo/client';
 
-/* ========= Scalars & Enums (from schema) ========= */
 export type ID = string;
 export type DateTime = string;
 
 export type Role = 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST';
 export type TaskStatus = 'TODO' | 'DOING' | 'DONE';
 
-/* ========= Entity Shapes (align to schema) ========= */
 export interface User {
   __typename?: 'User';
   id: ID;
@@ -39,7 +36,7 @@ export interface Document {
   id: ID;
   projectId: ID;
   title: string;
-  content: string;        // NOTE: non-null in schema
+  content: string; // NOTE: non-null in schema
   createdAt: DateTime;
   updatedAt: DateTime;
 }
@@ -66,9 +63,9 @@ export interface Task {
   id: ID;
   projectId: ID;
   title: string;
-  description: string;    // NOTE: non-null in schema
+  description: string; // NOTE: non-null in schema
   status: TaskStatus;
-  priority: number;       // NOTE: non-null in schema
+  priority: number; // NOTE: non-null in schema
   dueAt: DateTime | null;
   createdAt: DateTime;
   updatedAt: DateTime;
@@ -96,7 +93,9 @@ export const SIGN_UP: TypedDocumentNode<SignUpMutation, SignUpVariables> = gql`
   mutation SignUp($email: String!, $name: String!, $password: String!) {
     signUp(input: { email: $email, name: $name, password: $password }) {
       token
-      user { ...UserFields }
+      user {
+        ...UserFields
+      }
     }
   }
   ${USER_FIELDS}
@@ -111,7 +110,9 @@ export const SIGN_IN: TypedDocumentNode<SignInMutation, SignInVariables> = gql`
   mutation SignIn($email: String!, $password: String!) {
     signIn(input: { email: $email, password: $password }) {
       token
-      user { ...UserFields }
+      user {
+        ...UserFields
+      }
     }
   }
   ${USER_FIELDS}
@@ -122,7 +123,9 @@ export type MeVariables = Record<string, never>;
 
 export const ME: TypedDocumentNode<MeQuery, MeVariables> = gql`
   query Me {
-    currentUser { ...UserFields }
+    currentUser {
+      ...UserFields
+    }
   }
   ${USER_FIELDS}
 `;
@@ -133,20 +136,34 @@ export type TeamsVariables = Record<string, never>;
 
 export const TEAMS: TypedDocumentNode<TeamsQuery, TeamsVariables> = gql`
   query Teams {
-    teams { id name slug }
+    teams {
+      id
+      name
+      slug
+    }
   }
 `;
 
-export type ProjectsQuery = { projects: Array<Pick<Project, 'id' | 'name' | 'key' | 'teamId'>> };
+export type ProjectsQuery = {
+  projects: Array<Pick<Project, 'id' | 'name' | 'key' | 'teamId'>>;
+};
 export type ProjectsVariables = { teamId: ID };
 
-export const PROJECTS: TypedDocumentNode<ProjectsQuery, ProjectsVariables> = gql`
-  query Projects($teamId: ID!) {
-    projects(teamId: $teamId) { id name key teamId }
-  }
-`;
+export const PROJECTS: TypedDocumentNode<ProjectsQuery, ProjectsVariables> =
+  gql`
+    query Projects($teamId: ID!) {
+      projects(teamId: $teamId) {
+        id
+        name
+        key
+        teamId
+      }
+    }
+  `;
 
-export type CreateProjectMutation = { createProject: Pick<Project, 'id' | 'name' | 'key' | 'teamId'> };
+export type CreateProjectMutation = {
+  createProject: Pick<Project, 'id' | 'name' | 'key' | 'teamId'>;
+};
 export type CreateProjectVariables = { teamId: ID; name: string; key: string };
 
 export const CREATE_PROJECT: TypedDocumentNode<
@@ -155,7 +172,10 @@ export const CREATE_PROJECT: TypedDocumentNode<
 > = gql`
   mutation CreateProject($teamId: ID!, $name: String!, $key: String!) {
     createProject(input: { teamId: $teamId, name: $name, key: $key }) {
-      id name key teamId
+      id
+      name
+      key
+      teamId
     }
   }
 `;
@@ -171,14 +191,21 @@ export const DELETE_PROJECT: TypedDocumentNode<DeleteProjectMutation, DeleteProj
 */
 
 /* ========= Documents ========= */
-export type DocumentsQuery = { documents: Array<Pick<Document, 'id' | 'title' | 'updatedAt'>> };
+export type DocumentsQuery = {
+  documents: Array<Pick<Document, 'id' | 'title' | 'updatedAt'>>;
+};
 export type DocumentsVariables = { projectId: ID };
 
-export const DOCUMENTS: TypedDocumentNode<DocumentsQuery, DocumentsVariables> = gql`
-  query Documents($projectId: ID!) {
-    documents(projectId: $projectId) { id title updatedAt }
-  }
-`;
+export const DOCUMENTS: TypedDocumentNode<DocumentsQuery, DocumentsVariables> =
+  gql`
+    query Documents($projectId: ID!) {
+      documents(projectId: $projectId) {
+        id
+        title
+        updatedAt
+      }
+    }
+  `;
 
 export type DocumentByIdQuery = { document: Document | null };
 export type DocumentByIdVariables = { id: ID };
@@ -189,7 +216,12 @@ export const DOCUMENT_BY_ID: TypedDocumentNode<
 > = gql`
   query DocumentById($id: ID!) {
     document(id: $id) {
-      id projectId title content createdAt updatedAt
+      id
+      projectId
+      title
+      content
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -198,30 +230,50 @@ export const DOCUMENT_BY_ID: TypedDocumentNode<
 export type DocumentQuery = { document: Document | null };
 export type DocumentVariables = { id: ID };
 
-export const DOCUMENT: TypedDocumentNode<DocumentQuery, DocumentVariables> = gql`
-  query Document($id: ID!) {
-    document(id: $id) {
-      id projectId title content createdAt updatedAt
+export const DOCUMENT: TypedDocumentNode<DocumentQuery, DocumentVariables> =
+  gql`
+    query Document($id: ID!) {
+      document(id: $id) {
+        id
+        projectId
+        title
+        content
+        createdAt
+        updatedAt
+      }
     }
-  }
-`;
+  `;
 
-export type CreateDocumentMutation = { createDocument: Pick<Document, 'id' | 'title' | 'updatedAt'> };
-export type CreateDocumentVariables = { projectId: ID; title: string; content?: string | null };
+export type CreateDocumentMutation = {
+  createDocument: Pick<Document, 'id' | 'title' | 'updatedAt'>;
+};
+export type CreateDocumentVariables = {
+  projectId: ID;
+  title: string;
+  content?: string | null;
+};
 
 export const CREATE_DOCUMENT: TypedDocumentNode<
   CreateDocumentMutation,
   CreateDocumentVariables
 > = gql`
   mutation CreateDocument($projectId: ID!, $title: String!, $content: String) {
-    createDocument(input: { projectId: $projectId, title: $title, content: $content }) {
-      id title updatedAt
+    createDocument(
+      input: { projectId: $projectId, title: $title, content: $content }
+    ) {
+      id
+      title
+      updatedAt
     }
   }
 `;
 
 export type UpdateDocumentMutation = { updateDocument: Document };
-export type UpdateDocumentVariables = { id: ID; title?: string | null; content?: string | null };
+export type UpdateDocumentVariables = {
+  id: ID;
+  title?: string | null;
+  content?: string | null;
+};
 
 export const UPDATE_DOCUMENT: TypedDocumentNode<
   UpdateDocumentMutation,
@@ -229,12 +281,19 @@ export const UPDATE_DOCUMENT: TypedDocumentNode<
 > = gql`
   mutation UpdateDocument($id: ID!, $title: String, $content: String) {
     updateDocument(input: { id: $id, title: $title, content: $content }) {
-      id projectId title content createdAt updatedAt
+      id
+      projectId
+      title
+      content
+      createdAt
+      updatedAt
     }
   }
 `;
 
-export type UpdateDocumentContentMutation = { updateDocumentContent: Pick<Document, 'id' | 'updatedAt'> };
+export type UpdateDocumentContentMutation = {
+  updateDocumentContent: Pick<Document, 'id' | 'updatedAt'>;
+};
 export type UpdateDocumentContentVariables = { id: ID; content: string };
 
 export const UPDATE_DOCUMENT_CONTENT: TypedDocumentNode<
@@ -242,7 +301,10 @@ export const UPDATE_DOCUMENT_CONTENT: TypedDocumentNode<
   UpdateDocumentContentVariables
 > = gql`
   mutation UpdateDocumentContent($id: ID!, $content: String!) {
-    updateDocumentContent(id: $id, content: $content) { id updatedAt }
+    updateDocumentContent(id: $id, content: $content) {
+      id
+      updatedAt
+    }
   }
 `;
 
@@ -258,13 +320,19 @@ export const DELETE_DOCUMENT: TypedDocumentNode<DeleteDocumentMutation, DeleteDo
 export type ChannelsQuery = { channels: Array<Pick<Channel, 'id' | 'name'>> };
 export type ChannelsVariables = { projectId: ID };
 
-export const CHANNELS: TypedDocumentNode<ChannelsQuery, ChannelsVariables> = gql`
-  query Channels($projectId: ID!) {
-    channels(projectId: $projectId) { id name }
-  }
-`;
+export const CHANNELS: TypedDocumentNode<ChannelsQuery, ChannelsVariables> =
+  gql`
+    query Channels($projectId: ID!) {
+      channels(projectId: $projectId) {
+        id
+        name
+      }
+    }
+  `;
 
-export type CreateChannelMutation = { createChannel: Pick<Channel, 'id' | 'name'> };
+export type CreateChannelMutation = {
+  createChannel: Pick<Channel, 'id' | 'name'>;
+};
 export type CreateChannelVariables = { projectId: ID; name: string };
 
 export const CREATE_CHANNEL: TypedDocumentNode<
@@ -272,7 +340,10 @@ export const CREATE_CHANNEL: TypedDocumentNode<
   CreateChannelVariables
 > = gql`
   mutation CreateChannel($projectId: ID!, $name: String!) {
-    createChannel(input: { projectId: $projectId, name: $name }) { id name }
+    createChannel(input: { projectId: $projectId, name: $name }) {
+      id
+      name
+    }
   }
 `;
 
@@ -284,21 +355,38 @@ export const DELETE_CHANNEL: TypedDocumentNode<DeleteChannelMutation, DeleteChan
 `;
 */
 
-export type MessagesQuery = { messages: Array<{ id: ID; body: string; createdAt: DateTime; author: UserFieldsFragment }> };
+export type MessagesQuery = {
+  messages: Array<{
+    id: ID;
+    body: string;
+    createdAt: DateTime;
+    author: UserFieldsFragment;
+  }>;
+};
 export type MessagesVariables = { channelId: ID };
 
-export const MESSAGES: TypedDocumentNode<MessagesQuery, MessagesVariables> = gql`
-  query Messages($channelId: ID!) {
-    messages(channelId: $channelId) {
-      id body createdAt
-      author { ...UserFields }
+export const MESSAGES: TypedDocumentNode<MessagesQuery, MessagesVariables> =
+  gql`
+    query Messages($channelId: ID!) {
+      messages(channelId: $channelId) {
+        id
+        body
+        createdAt
+        author {
+          ...UserFields
+        }
+      }
     }
-  }
-  ${USER_FIELDS}
-`;
+    ${USER_FIELDS}
+  `;
 
 export type SendMessageMutation = {
-  sendMessage: { id: ID; body: string; createdAt: DateTime; author: UserFieldsFragment };
+  sendMessage: {
+    id: ID;
+    body: string;
+    createdAt: DateTime;
+    author: UserFieldsFragment;
+  };
 };
 export type SendMessageVariables = { channelId: ID; body: string };
 
@@ -308,15 +396,24 @@ export const SEND_MESSAGE: TypedDocumentNode<
 > = gql`
   mutation SendMessage($channelId: ID!, $body: String!) {
     sendMessage(input: { channelId: $channelId, body: $body }) {
-      id body createdAt
-      author { ...UserFields }
+      id
+      body
+      createdAt
+      author {
+        ...UserFields
+      }
     }
   }
   ${USER_FIELDS}
 `;
 
 export type MessageAddedSubscription = {
-  messageAdded: { id: ID; body: string; createdAt: DateTime; author: UserFieldsFragment };
+  messageAdded: {
+    id: ID;
+    body: string;
+    createdAt: DateTime;
+    author: UserFieldsFragment;
+  };
 };
 export type MessageAddedVariables = { channelId: ID };
 
@@ -326,24 +423,37 @@ export const MESSAGE_ADDED: TypedDocumentNode<
 > = gql`
   subscription MessageAdded($channelId: ID!) {
     messageAdded(channelId: $channelId) {
-      id body createdAt
-      author { ...UserFields }
+      id
+      body
+      createdAt
+      author {
+        ...UserFields
+      }
     }
   }
   ${USER_FIELDS}
 `;
 
 /* ========= Tasks ========= */
-export type TasksQuery = { tasks: Array<Pick<Task, 'id' | 'title' | 'status' | 'priority'>> };
+export type TasksQuery = {
+  tasks: Array<Pick<Task, 'id' | 'title' | 'status' | 'priority'>>;
+};
 export type TasksVariables = { projectId: ID };
 
 export const TASKS: TypedDocumentNode<TasksQuery, TasksVariables> = gql`
   query Tasks($projectId: ID!) {
-    tasks(projectId: $projectId) { id title status priority }
+    tasks(projectId: $projectId) {
+      id
+      title
+      status
+      priority
+    }
   }
 `;
 
-export type AddTaskMutation = { addTask: Pick<Task, 'id' | 'title' | 'status'> };
+export type AddTaskMutation = {
+  addTask: Pick<Task, 'id' | 'title' | 'status'>;
+};
 export type AddTaskVariables = {
   projectId: ID;
   title: string;
@@ -352,16 +462,39 @@ export type AddTaskVariables = {
   dueAt?: DateTime | null;
 };
 
-export const ADD_TASK: TypedDocumentNode<AddTaskMutation, AddTaskVariables> = gql`
-  mutation AddTask($projectId: ID!, $title: String!, $description: String, $priority: Int, $dueAt: DateTime) {
-    addTask(input: { projectId: $projectId, title: $title, description: $description, priority: $priority, dueAt: $dueAt }) {
-      id title status
+export const ADD_TASK: TypedDocumentNode<AddTaskMutation, AddTaskVariables> =
+  gql`
+    mutation AddTask(
+      $projectId: ID!
+      $title: String!
+      $description: String
+      $priority: Int
+      $dueAt: DateTime
+    ) {
+      addTask(
+        input: {
+          projectId: $projectId
+          title: $title
+          description: $description
+          priority: $priority
+          dueAt: $dueAt
+        }
+      ) {
+        id
+        title
+        status
+      }
     }
-  }
-`;
+  `;
 
 export type UpdateTaskStatusMutation = {
-  updateTaskStatus: { id: ID; status: TaskStatus; updatedAt: DateTime; projectId: ID; title: string };
+  updateTaskStatus: {
+    id: ID;
+    status: TaskStatus;
+    updatedAt: DateTime;
+    projectId: ID;
+    title: string;
+  };
 };
 export type UpdateTaskStatusVariables = { id: ID; status: TaskStatus };
 
@@ -371,7 +504,11 @@ export const UPDATE_TASK_STATUS: TypedDocumentNode<
 > = gql`
   mutation UpdateTaskStatus($id: ID!, $status: TaskStatus!) {
     updateTaskStatus(id: $id, status: $status) {
-      id status updatedAt projectId title
+      id
+      status
+      updatedAt
+      projectId
+      title
     }
   }
 `;
@@ -410,7 +547,13 @@ export const DELETE_TASK: TypedDocumentNode<DeleteTaskMutation, DeleteTaskVariab
 */
 
 export type TaskAddedSubscription = {
-  taskAdded: { id: ID; title: string; status: TaskStatus; priority: number; projectId: ID };
+  taskAdded: {
+    id: ID;
+    title: string;
+    status: TaskStatus;
+    priority: number;
+    projectId: ID;
+  };
 };
 export type TaskAddedVariables = { projectId: ID };
 
@@ -419,12 +562,24 @@ export const TASK_ADDED_SUB: TypedDocumentNode<
   TaskAddedVariables
 > = gql`
   subscription TaskAdded($projectId: ID!) {
-    taskAdded(projectId: $projectId) { id title status priority projectId }
+    taskAdded(projectId: $projectId) {
+      id
+      title
+      status
+      priority
+      projectId
+    }
   }
 `;
 
 export type TaskUpdatedSubscription = {
-  taskUpdated: { id: ID; title: string; status: TaskStatus; priority: number; projectId: ID };
+  taskUpdated: {
+    id: ID;
+    title: string;
+    status: TaskStatus;
+    priority: number;
+    projectId: ID;
+  };
 };
 export type TaskUpdatedVariables = { projectId: ID };
 
@@ -433,6 +588,12 @@ export const TASK_UPDATED_SUB: TypedDocumentNode<
   TaskUpdatedVariables
 > = gql`
   subscription TaskUpdated($projectId: ID!) {
-    taskUpdated(projectId: $projectId) { id title status priority projectId }
+    taskUpdated(projectId: $projectId) {
+      id
+      title
+      status
+      priority
+      projectId
+    }
   }
 `;

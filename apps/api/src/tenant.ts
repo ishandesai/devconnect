@@ -75,7 +75,6 @@ export async function teamIdForTask(ctx: Ctx, taskId: string) {
   return t.project.teamId;
 }
 
-// Convenience function to check access and return teamId
 export async function requireProjectAccess(ctx: Ctx, projectId: string) {
   const teamId = await teamIdForProject(ctx, projectId);
   await assertTeamMember(ctx, teamId);
@@ -100,7 +99,6 @@ export async function requireTaskAccess(ctx: Ctx, taskId: string) {
   return teamId;
 }
 
-// Team-scoped subscription helpers
 export async function getTeamScopedChannelTopic(ctx: Ctx, channelId: string) {
   const teamId = await teamIdForChannel(ctx, channelId);
   await assertTeamMember(ctx, teamId);

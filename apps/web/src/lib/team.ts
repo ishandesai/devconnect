@@ -1,4 +1,3 @@
-// team.ts
 export const setActiveTeam = (id: string) => {
   if (typeof window !== 'undefined') localStorage.setItem('activeTeam', id);
 };

@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ClientSideSuspense, RoomProvider } from '@liveblocks/react/suspense';
-import { useLiveblocksExtension, FloatingToolbar } from '@liveblocks/react-tiptap';
+import {
+  useLiveblocksExtension,
+  FloatingToolbar,
+} from '@liveblocks/react-tiptap';
 import { useEditor, EditorContent } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 
-// ✅ Your Apollo version’s types say hooks are under /react
 import { useMutation, useQuery } from '@apollo/client/react';
 
 import { LiveList, LiveMap } from '@liveblocks/client';
@@ -31,8 +33,6 @@ export function CollaborativeEditor({ docId }: { docId: string }) {
   return (
     <RoomProvider
       id={`doc:${docId}`}
-      // ❗ Do NOT try to add generics in JSX props; just pass the object
-      // and keep the shape Liveblocks expects by default (cursor/selection)
       initialPresence={{
         cursor: null,
         selection: null,
@@ -57,29 +57,26 @@ export function CollaborativeEditor({ docId }: { docId: string }) {
 }
 
 function EditorInner({ docId }: { docId: string }) {
-  // ✅ Fully typed query/mutation from your TypedDocumentNodes
-  const { data, loading } = useQuery<DocumentQuery, DocumentVariables>(DOCUMENT, {
-    variables: { id: docId },
-  });
+  const { data, loading } = useQuery<DocumentQuery, DocumentVariables>(
+    DOCUMENT,
+    {
+      variables: { id: docId },
+    }
+  );
   const [save] = useMutation<
     UpdateDocumentContentMutation,
     UpdateDocumentContentVariables
   >(UPDATE_DOCUMENT_CONTENT);
 
-  // Presence: your installed @liveblocks/react requires a selector for useOthers,
-  // and the default presence type only allows cursor/selection.
   const updateMyPresence = useUpdateMyPresence();
   useEffect(() => {
-    // If you want custom fields (e.g., userInfo), you must configure generics at RoomProvider level
-    // in this library version. For now, stick to default keys.
-    updateMyPresence({}); // no-op; demonstrates the API without adding unknown keys
+    updateMyPresence({});
   }, [updateMyPresence]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const lastSavedJsonRef = useRef<string | null>(null);
 
-  // Your version requires a selector argument
   const others = useOthers((list) => list);
 
   const liveblocks = useLiveblocksExtension();
@@ -90,13 +87,14 @@ function EditorInner({ docId }: { docId: string }) {
     autofocus: true,
   });
 
-  // Load server content once available
   useEffect(() => {
     if (!editor) return;
     const raw = data?.document?.content; // schema says non-null string; undefined until data loads
     if (typeof raw === 'string') {
       try {
-        const parsed = (raw.trim() ? JSON.parse(raw) : { type: 'doc', content: [] }) as JSONContent;
+        const parsed = (
+          raw.trim() ? JSON.parse(raw) : { type: 'doc', content: [] }
+        ) as JSONContent;
         editor.commands.setContent(parsed, false);
         lastSavedJsonRef.current = JSON.stringify(parsed);
       } catch {
@@ -106,7 +104,6 @@ function EditorInner({ docId }: { docId: string }) {
     }
   }, [editor, data?.document?.content]);
 
-  // Debounced autosave
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!editor) return;
@@ -166,9 +163,13 @@ function EditorInner({ docId }: { docId: string }) {
                   {others.length} other{others.length > 1 ? 's' : ''} editing
                 </span>
                 <div className="flex -space-x-1">
-                {others.slice(0, 3).map((other) => (
-  <Avatar key={other.connectionId} name="Anonymous" size="sm" />
-))}
+                  {others.slice(0, 3).map((other) => (
+                    <Avatar
+                      key={other.connectionId}
+                      name="Anonymous"
+                      size="sm"
+                    />
+                  ))}
                   {others.length > 3 && (
                     <div className="w-6 h-6 rounded-full bg-gray-400 text-white text-xs flex items-center justify-center border-2 border-white">
                       +{others.length - 3}
@@ -225,23 +226,35 @@ function EditorInner({ docId }: { docId: string }) {
           <div className="w-px h-6 bg-gray-200" />
 
           <Button
-            variant={editor.isActive('heading', { level: 1 }) ? 'primary' : 'ghost'}
+            variant={
+              editor.isActive('heading', { level: 1 }) ? 'primary' : 'ghost'
+            }
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
           >
             H1
           </Button>
           <Button
-            variant={editor.isActive('heading', { level: 2 }) ? 'primary' : 'ghost'}
+            variant={
+              editor.isActive('heading', { level: 2 }) ? 'primary' : 'ghost'
+            }
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
           >
             H2
           </Button>
           <Button
-            variant={editor.isActive('heading', { level: 3 }) ? 'primary' : 'ghost'}
+            variant={
+              editor.isActive('heading', { level: 3 }) ? 'primary' : 'ghost'
+            }
             size="sm"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
           >
             H3
           </Button>

@@ -1,4 +1,3 @@
-// Server Component
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
@@ -19,9 +18,21 @@ export default function ProjectLayout({
       sidebar={
         <Sidebar
           items={[
-            { href: `/t/${teamId}/p/${projectId}/docs`, label: 'Docs',  icon: '📄' },
-            { href: `/t/${teamId}/p/${projectId}/chat`, label: 'Chat',  icon: '💬' },
-            { href: `/t/${teamId}/p/${projectId}/tasks`, label: 'Tasks', icon: '📝' },
+            {
+              href: `/t/${teamId}/p/${projectId}/docs`,
+              label: 'Docs',
+              icon: '📄',
+            },
+            {
+              href: `/t/${teamId}/p/${projectId}/chat`,
+              label: 'Chat',
+              icon: '💬',
+            },
+            {
+              href: `/t/${teamId}/p/${projectId}/tasks`,
+              label: 'Tasks',
+              icon: '📝',
+            },
           ]}
         />
       }

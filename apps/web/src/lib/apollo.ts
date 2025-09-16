@@ -1,4 +1,3 @@
-// apollo.ts
 import {
   ApolloClient,
   InMemoryCache,
@@ -21,7 +20,6 @@ const WS_URI =
   process.env.NEXT_PUBLIC_GRAPHQL_WS_URL ||
   HTTP_URI.replace(/^http(s?):/i, 'ws$1:');
 
-// ---- Auth header (omit if no token) ----
 const authLink = new ApolloLink((operation, forward) => {
   const token = getToken();
   operation.setContext(({ headers = {} }) => ({
@@ -33,7 +31,6 @@ const authLink = new ApolloLink((operation, forward) => {
   return forward!(operation);
 });
 
-// ---- Timeout using AbortController (no fetchOptions.timeout) ----
 const timeoutLink = new ApolloLink((operation, forward) => {
   if (typeof AbortController === 'undefined') return forward!(operation);
   const controller = new AbortController();
@@ -70,11 +67,10 @@ function makeHttpLink() {
 }
 
 function makeWsLink() {
-  // Browser only
   return new GraphQLWsLink(
     createClient({
       url: WS_URI,
-      lazy: true, // connect on first subscription
+      lazy: true,
       connectionParams: () => {
         const t = getToken();
         return t ? { Authorization: `Bearer ${t}` } : {};
@@ -85,10 +81,8 @@ function makeWsLink() {
 
 function makeLink() {
   if (typeof window === 'undefined') {
-    // Server (RSC/SSR): HTTP only
     return from([timeoutLink, authLink, makeHttpLink()]);
   }
-  // Client: split subscriptions vs queries/mutations
   const wsLink = makeWsLink();
   return split(
     ({ query }) => {
@@ -109,12 +103,10 @@ function createApolloClient() {
   });
 }
 
-// Client-side singleton to preserve cache & avoid multiple WS connections
 let browserClient: ReturnType<typeof createApolloClient> | null = null;
 
 export function getApolloClient() {
   if (typeof window === 'undefined') {
-    // per-request client on server
     return createApolloClient();
   }
   return (browserClient ??= createApolloClient());

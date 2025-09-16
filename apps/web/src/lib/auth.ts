@@ -1,4 +1,3 @@
-// auth.ts — client-safe helpers
 export const saveToken = (t: string) => {
   if (typeof window !== 'undefined') localStorage.setItem('token', t);
 };

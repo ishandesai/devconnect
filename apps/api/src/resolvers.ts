@@ -1,4 +1,3 @@
-// resolvers.ts
 import type { Ctx } from './context';
 import {
   assertTeamMember,
@@ -12,10 +11,8 @@ import { compare, hash } from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pubsub, MSG_TOPIC, TASK_ADDED, TASK_UPDATED } from './pubsub';
 
-// If you already wire DateTime elsewhere, remove this and add your own.
 import { GraphQLScalarType, Kind } from 'graphql';
 
-// ---- helpers ----
 const requireAuth = (ctx: Ctx) => {
   if (!ctx.userId) throw new Error('UNAUTHENTICATED');
   return ctx.userId;
@@ -36,7 +33,6 @@ async function isTeamAdmin(ctx: Ctx, teamId: string) {
   return !!m && (m.role === 'OWNER' || m.role === 'ADMIN');
 }
 
-// Simple DateTime scalar (ISO string <-> Date)
 const DateTime = new GraphQLScalarType({
   name: 'DateTime',
   serialize(value: unknown) {
@@ -57,7 +53,6 @@ const DateTime = new GraphQLScalarType({
   },
 });
 
-// ---- resolvers ----
 export const resolvers = {
   DateTime,
 
@@ -67,7 +62,6 @@ export const resolvers = {
         ? ctx.prisma.user.findUnique({ where: { id: ctx.userId } })
         : null,
 
-    // only teams the user belongs to
     teams: async (_: unknown, __: unknown, ctx: Ctx) => {
       const userId = requireAuth(ctx);
       return ctx.prisma.team.findMany({
@@ -208,7 +202,6 @@ export const resolvers = {
     ) => {
       await assertTeamRole(ctx, teamId, 'ADMIN');
 
-      // Prevent removing the last owner
       const ownerCount = await ctx.prisma.membership.count({
         where: { teamId, role: 'OWNER' },
       });
@@ -244,7 +237,6 @@ export const resolvers = {
       const teamId = await teamIdForProject(ctx, projectId);
       await assertTeamRole(ctx, teamId, 'ADMIN');
 
-      // Delete all related data
       await ctx.prisma.task.deleteMany({ where: { projectId } });
       await ctx.prisma.message.deleteMany({
         where: { channel: { projectId } },
@@ -278,7 +270,6 @@ export const resolvers = {
       });
     },
 
-    // The concise content-only update mutation declared in your schema
     updateDocumentContent: async (
       _: unknown,
       { id, content }: { id: string; content: string },
@@ -315,7 +306,6 @@ export const resolvers = {
       const teamId = await teamIdForChannel(ctx, channelId);
       await assertTeamRole(ctx, teamId, 'MEMBER');
 
-      // Delete all messages in the channel first
       await ctx.prisma.message.deleteMany({ where: { channelId } });
       await ctx.prisma.channel.delete({ where: { id: channelId } });
 
@@ -336,7 +326,6 @@ export const resolvers = {
         include: { author: true },
       });
 
-      // Publish to both legacy and team-scoped topics for backward compatibility
       const teamScopedTopic = `TEAM:${teamId}:MSG:${input.channelId}`;
       await Promise.all([
         pubsub.publish(MSG_TOPIC(input.channelId), { messageAdded: message }),
@@ -345,7 +334,6 @@ export const resolvers = {
       return message as any;
     },
 
-    // ---------- TASKS ----------
     addTask: async (_: unknown, { input }: any, ctx: Ctx) => {
       const userId = requireAuth(ctx);
       const teamId = await teamIdForProject(ctx, input.projectId);
@@ -362,7 +350,6 @@ export const resolvers = {
         },
       });
 
-      // Publish to both legacy and team-scoped topics
       const teamScopedTopic = `TEAM:${teamId}:TASK_ADDED:${input.projectId}`;
       await Promise.all([
         pubsub.publish(TASK_ADDED(task.projectId), { taskAdded: task }),
@@ -387,7 +374,6 @@ export const resolvers = {
         },
       });
 
-      // Publish to both legacy and team-scoped topics
       const teamScopedTopic = `TEAM:${teamId}:TASK_UPDATED:${updated.projectId}`;
       await Promise.all([
         pubsub.publish(TASK_UPDATED(updated.projectId), {
@@ -398,7 +384,6 @@ export const resolvers = {
       return updated;
     },
 
-    // NEW: convenience mutation for status only (with same access rules)
     updateTaskStatus: async (
       _: unknown,
       { id, status }: { id: string; status: 'TODO' | 'DOING' | 'DONE' },
@@ -413,7 +398,6 @@ export const resolvers = {
         data: { status },
       });
 
-      // Publish to both legacy and team-scoped topics
       const teamScopedTopic = `TEAM:${teamId}:TASK_UPDATED:${updated.projectId}`;
       await Promise.all([
         pubsub.publish(TASK_UPDATED(updated.projectId), {
@@ -443,7 +427,6 @@ export const resolvers = {
       const updated = await ctx.prisma.task.findUnique({
         where: { id: input.taskId },
       });
-      // Publish to both legacy and team-scoped topics
       if (updated) {
         const teamScopedTopic = `TEAM:${teamId}:TASK_UPDATED:${updated.projectId}`;
         await Promise.all([
@@ -464,7 +447,6 @@ export const resolvers = {
       const teamId = await teamIdForTask(ctx, taskId);
       await assertTeamRole(ctx, teamId, 'MEMBER');
 
-      // Delete all assignees first
       await ctx.prisma.taskAssignee.deleteMany({ where: { taskId } });
       await ctx.prisma.task.delete({ where: { id: taskId } });
 
@@ -481,7 +463,6 @@ export const resolvers = {
       ) => {
         const teamId = await teamIdForChannel(ctx, channelId);
         await assertTeamMember(ctx, teamId);
-        // Use team-scoped topic for better isolation
         const teamScopedTopic = `TEAM:${teamId}:MSG:${channelId}`;
         return pubsub.asyncIterator([MSG_TOPIC(channelId), teamScopedTopic]);
       },
@@ -495,7 +476,6 @@ export const resolvers = {
       ) => {
         const teamId = await teamIdForProject(ctx, projectId);
         await assertTeamMember(ctx, teamId);
-        // Use team-scoped topic for better isolation
         const teamScopedTopic = `TEAM:${teamId}:TASK_ADDED:${projectId}`;
         return pubsub.asyncIterator([TASK_ADDED(projectId), teamScopedTopic]);
       },
@@ -508,14 +488,12 @@ export const resolvers = {
       ) => {
         const teamId = await teamIdForProject(ctx, projectId);
         await assertTeamMember(ctx, teamId);
-        // Use team-scoped topic for better isolation
         const teamScopedTopic = `TEAM:${teamId}:TASK_UPDATED:${projectId}`;
         return pubsub.asyncIterator([TASK_UPDATED(projectId), teamScopedTopic]);
       },
     },
   },
 
-  // field resolvers
   Message: {
     author: (m: any, _args: unknown, ctx: Ctx) =>
       ctx.prisma.user.findUnique({ where: { id: m.authorId } }),

@@ -42,3 +42,11 @@ Thumbs.db
 # ---------------------------
 tree.txt
 *.tsbuildinfo
+# pnpm artifacts
+node_modules/
+.pnpm/
+.pnpm-store/
+# pnpm artifacts
+node_modules/
+.pnpm/
+.pnpm-store/

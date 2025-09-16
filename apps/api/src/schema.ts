@@ -1,4 +1,3 @@
-// schema.ts
 export const typeDefs = /* GraphQL */ `
   #graphql
   scalar DateTime

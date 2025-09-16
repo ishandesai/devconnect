@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 interface AvatarProps {
   name: string;
   size?: 'sm' | 'md' | 'lg';
-  color?: string;          // tailwind bg-* class override
+  color?: string;
   className?: string;
   title?: string;
 }
@@ -27,13 +27,18 @@ const defaultColors = [
   'bg-teal-500',
 ];
 
-export function Avatar({ name, size = 'md', color, className, title }: AvatarProps) {
+export function Avatar({
+  name,
+  size = 'md',
+  color,
+  className,
+  title,
+}: AvatarProps) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   const initials =
-    (parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[1]?.[0] ?? '' : '');
+    (parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[1]?.[0] ?? '') : '');
   const safeInitials = (initials || '?').toUpperCase().slice(0, 2);
 
-  // stable color by name; includes spaces in hash for consistency
   const hash = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   const bgColor = color ?? defaultColors[hash % defaultColors.length];
 

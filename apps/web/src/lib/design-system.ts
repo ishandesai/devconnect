@@ -1,7 +1,3 @@
-// Design System for DevConnect Collaborative Editor
-// Consistent TypeScript types and UI patterns
-
-// ===== TYPES =====
 export interface Document {
   id: string;
   title: string;
@@ -34,7 +30,6 @@ export interface Collaborator {
   };
 }
 
-// ===== UI COMPONENT PROPS =====
 export interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -58,7 +53,6 @@ export interface StatusProps {
   showIcon?: boolean;
 }
 
-// ===== DESIGN TOKENS =====
 export const colors = {
   primary: {
     50: '#eff6ff',
@@ -123,20 +117,20 @@ export const colors = {
 } as const;
 
 export const spacing = {
-  xs: '0.25rem', // 4px
-  sm: '0.5rem', // 8px
-  md: '1rem', // 16px
-  lg: '1.5rem', // 24px
-  xl: '2rem', // 32px
-  '2xl': '3rem', // 48px
-  '3xl': '4rem', // 64px
+  xs: '0.25rem',
+  sm: '0.5rem',
+  md: '1rem',
+  lg: '1.5rem',
+  xl: '2rem',
+  '2xl': '3rem',
+  '3xl': '4rem',
 } as const;
 
 export const borderRadius = {
-  sm: '0.25rem', // 4px
-  md: '0.375rem', // 6px
-  lg: '0.5rem', // 8px
-  xl: '0.75rem', // 12px
+  sm: '0.25rem',
+  md: '0.375rem',
+  lg: '0.5rem',
+  xl: '0.75rem',
   full: '9999px',
 } as const;
 
@@ -147,7 +141,6 @@ export const shadows = {
   xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
 } as const;
 
-// ===== UTILITY FUNCTIONS =====
 export const formatTime = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -172,7 +165,6 @@ export const formatRelativeTime = (date: Date | string): string => {
   return formatDate(d);
 };
 
-// ===== COMPONENT STYLES =====
 export const getButtonStyles = (
   variant: ButtonProps['variant'] = 'primary',
   size: ButtonProps['size'] = 'md'
@@ -225,19 +217,15 @@ export const getCardStyles = (
   return `${variants[variant]} ${paddings[padding]} rounded-xl`;
 };
 
-// ===== COMMON CLASSES =====
 export const commonClasses = {
-  // Layout
   container: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8',
   flexCenter: 'flex items-center justify-center',
   flexBetween: 'flex items-center justify-between',
   flexStart: 'flex items-center justify-start',
 
-  // Spacing
   spaceY: 'space-y-4',
   spaceX: 'space-x-4',
 
-  // Text
   heading1: 'text-3xl font-bold text-gray-900',
   heading2: 'text-2xl font-semibold text-gray-900',
   heading3: 'text-xl font-semibold text-gray-800',
@@ -245,13 +233,11 @@ export const commonClasses = {
   caption: 'text-sm text-gray-500',
   small: 'text-xs text-gray-400',
 
-  // Interactive
   button: getButtonStyles(),
   input:
     'block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2',
   card: getCardStyles(),
 
-  // States
   loading: 'animate-pulse',
   error: 'text-red-600',
   success: 'text-green-600',

@@ -11,7 +11,6 @@ import {
 } from 'react';
 import { getActiveTeam, setActiveTeam } from './team';
 
-/* ── Query types ────────────────────────────────────────────────────────── */
 type TeamsQueryData = {
   teams: Array<{
     __typename?: 'Team';
@@ -24,7 +23,6 @@ type TeamsQueryData = {
 type TeamsQueryVars = Record<string, never>;
 type Team = TeamsQueryData['teams'][number];
 
-/* ── Typed document ─────────────────────────────────────────────────────── */
 export const TEAMS_QUERY: TypedDocumentNode<TeamsQueryData, TeamsQueryVars> =
   gql`
     query Teams {
@@ -55,7 +53,6 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const teams = data?.teams ?? [];
 
-  // Load/repair active team when teams arrive
   useEffect(() => {
     if (teams.length === 0) return;
 
@@ -67,10 +64,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     } else if (!currentTeam) {
       setCurrentTeam(teams[0]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teams]); // depend only on teams to avoid unnecessary loops
 
-  // Persist selection
   useEffect(() => {
     if (currentTeam) setActiveTeam(currentTeam.id);
   }, [currentTeam]);

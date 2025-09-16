@@ -1,4 +1,3 @@
-// Server Component: redirect to your preferred default tab
 import { redirect } from 'next/navigation';
 
 export default function ProjectIndex({
