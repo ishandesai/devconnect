@@ -1,122 +1,211 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client/react';
+
 import {
   CHANNELS,
-  CREATE_CHANNEL,
   MESSAGES,
   SEND_MESSAGE,
+  CREATE_CHANNEL,
   MESSAGE_ADDED,
+  type ChannelsQuery,
+  type ChannelsVariables,
+  type MessagesQuery,
+  type MessagesVariables,
+  type SendMessageMutation,
+  type SendMessageVariables,
+  type CreateChannelMutation,
+  type CreateChannelVariables,
+  type MessageAddedSubscription,
+  type MessageAddedVariables,
 } from '@/lib/graphql';
 
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Avatar } from '@/components/ui/Avatar';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+type ID = string;
+type Channel = ChannelsQuery['channels'][number];
+type ChatMessage = MessagesQuery['messages'][number];
+
 export default function ChatPanel({ projectId }: { projectId: string }) {
-  const { data: cdata, refetch: refetchChannels } = useQuery(CHANNELS, {
-    variables: { projectId },
-  });
+  // Channels
+  const { data: cdata } = useQuery(CHANNELS, { variables: { projectId } });
+  const channels = cdata?.channels ?? [];
 
-  const [channelId, setChannelId] = useState<string | null>(null);
+  const [channelId, setChannelId] = useState<ID | null>(null);
 
-  // Load messages for the selected channel
-  const { data, loading, subscribeToMore } = useQuery(MESSAGES, {
-    variables: { channelId },
-    skip: !channelId,
-    fetchPolicy: 'cache-and-network',
-  });
+  // ✅ Let types infer from TypedDocumentNode and only add `variables` when defined
+// ✅ Always pass variables; skip prevents any network call when channelId is null
+const {
+  data,
+  loading,
+  subscribeToMore,
+} = useQuery(MESSAGES, {
+  variables: { channelId: (channelId ?? '') as string }, // <-- always present
+  skip: !channelId,                                      // <-- prevents usage
+  fetchPolicy: 'cache-and-network',
+});
 
-  // Subscribe when channel changes
+
+  // ✅ Return full MessagesQuery from updateQuery; avoid DeepPartial by building a base
   useEffect(() => {
     if (!channelId) return;
-    const unsub = subscribeToMore({
+  
+    const unsubscribe = subscribeToMore<MessageAddedSubscription, MessageAddedVariables>({
       document: MESSAGE_ADDED,
       variables: { channelId },
       onError: console.error,
       updateQuery: (prev, { subscriptionData }) => {
         const next = subscriptionData.data?.messageAdded;
-        if (!next) return prev;
-        if (prev.messages?.some((m: any) => m.id === next.id)) return prev;
-        return { ...prev, messages: [...(prev.messages ?? []), next] };
+  
+        // Make a concrete list (not DeepPartial)
+        const baseList = ((prev?.messages ?? []) as MessagesQuery['messages']).filter(
+          (m): m is MessagesQuery['messages'][number] => Boolean(m)
+        );
+  
+        if (!next) return { messages: baseList };
+        if (baseList.some((m) => m.id === next.id)) return { messages: baseList };
+  
+        return { messages: [...baseList, next] };
       },
     });
-    return () => unsub();
+  
+    return () => unsubscribe();
   }, [channelId, subscribeToMore]);
+  
 
-  const [send] = useMutation(SEND_MESSAGE, {
+  // Mutations
+  const [send] = useMutation<SendMessageMutation, SendMessageVariables>(SEND_MESSAGE, {
     onError: console.error,
   });
 
-  const [create] = useMutation(CREATE_CHANNEL, {
-    onCompleted: () => refetchChannels(),
-  });
+  const [create] = useMutation<CreateChannelMutation, CreateChannelVariables>(
+    CREATE_CHANNEL,
+    { refetchQueries: [{ query: CHANNELS, variables: { projectId } }] }
+  );
 
-  // Pick first channel automatically
+  // Pick first channel by default
   useEffect(() => {
-    if (!channelId && cdata?.channels?.[0]) setChannelId(cdata.channels[0].id);
-  }, [cdata, channelId]);
+    if (!channelId && channels[0]) setChannelId(channels[0].id);
+  }, [channels, channelId]);
 
-  // Scroll handling
+  // Scrolling
   const listRef = useRef<HTMLDivElement>(null);
   const scrollToEnd = () =>
-    requestAnimationFrame(() =>
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-    );
+    requestAnimationFrame(() => {
+      const el = listRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+
   const msgs = data?.messages ?? [];
+
   useEffect(() => {
     if (!loading) scrollToEnd();
   }, [msgs.length, channelId, loading]);
 
   return (
-    <div className="flex w-full h-full">
-      <aside className="w-56 border-r p-3 space-y-2 text-sm">
-        <div className="flex items-center justify-between">
-          <b>Channels</b>
-          <button
-            className="text-xs px-2 py-1 border rounded"
-            onClick={() => {
-              const name = prompt('Channel name?') || 'general';
-              create({ variables: { projectId, name } });
+    <div className="flex w-full h-full gap-6">
+      {/* Channels Sidebar */}
+      <Card className="w-80 p-6 bg-white">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Channels</h2>
+            <p className="text-sm text-gray-600 mt-1">Team communication</p>
+          </div>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={async () => {
+              const name = (prompt('Channel name?') || 'general').trim();
+              if (!name) return;
+              await create({ variables: { projectId, name } });
             }}
           >
             + New
-          </button>
+          </Button>
         </div>
-        <ul className="space-y-1">
-          {(cdata?.channels ?? []).map((c: any) => (
+        <ul className="space-y-2">
+          {channels.map((c: Channel) => (
             <li key={c.id}>
               <button
-                className={`underline ${
-                  channelId === c.id ? 'font-semibold' : ''
+                className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 group ${
+                  channelId === c.id
+                    ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
                 onClick={() => setChannelId(c.id)}
               >
-                {c.name}
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-400 group-hover:text-gray-600">#</span>
+                  <span>{c.name}</span>
+                  {channelId === c.id && (
+                    <div className="ml-auto w-2 h-2 bg-blue-600 rounded-full" />
+                  )}
+                </div>
               </button>
             </li>
           ))}
         </ul>
-      </aside>
+      </Card>
 
-      <section className="flex-1 flex flex-col">
-        <div ref={listRef} className="flex-1 overflow-auto p-3 space-y-2">
-          {msgs.map((m: any) => (
-            <div key={m.id} className="text-sm">
-              <b>{m.author?.name || m.author?.email || 'unknown'}</b>: {m.body}
-            </div>
+      {/* Messages */}
+      <Card variant="elevated" className="flex-1 flex flex-col min-h-0">
+        <header className="h-16 flex items-center px-6 border-b border-gray-200 bg-white">
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-400 text-lg">#</span>
+            <span className="font-bold text-gray-900 text-lg">
+              {channelId
+                ? channels.find((c) => c.id === channelId)?.name ?? ''
+                : 'Select a channel'}
+            </span>
+          </div>
+        </header>
+
+        <div ref={listRef} className="flex-1 overflow-auto p-6 space-y-4">
+          {!channelId && (
+            <EmptyState
+              emoji="💬"
+              title="Welcome to Chat"
+              subtitle="Pick a channel to start chatting"
+            />
+          )}
+
+          {channelId && msgs.length === 0 && !loading && (
+            <EmptyState
+              emoji="👋"
+              title="No messages yet"
+              subtitle="Say hi to get the conversation started!"
+            />
+          )}
+
+          {msgs.map((m) => (
+            <MessageRow key={m.id} msg={m} />
           ))}
-          {loading && <div className="text-xs text-gray-500">Loading…</div>}
+
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="md" text="Loading messages..." />
+            </div>
+          )}
         </div>
 
+        {/* Composer */}
         {channelId && (
           <form
-            className="p-3 border-t flex gap-2"
-            onSubmit={(e) => {
+            key={channelId}
+            className="p-3 border-t border-gray-200 flex gap-2"
+            onSubmit={async (e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
               const body = String(f.get('body') || '').trim();
               if (!body) return;
 
-              // Optimistic UI + write to the right messages(channelId) list
-              const optimistic = {
+              const optimistic: NonNullable<SendMessageMutation['sendMessage']> = {
                 __typename: 'Message',
                 id: `temp-${Date.now()}`,
                 body,
@@ -124,29 +213,29 @@ export default function ChatPanel({ projectId }: { projectId: string }) {
                 author: {
                   __typename: 'User',
                   id: 'me',
-                  name: 'me',
+                  name: 'You',
                   email: '',
+                  createdAt: new Date().toISOString(),
                 },
-              };
+                channelId, // extra field is fine; not queried elsewhere
+              } as any;
 
-              send({
+              await send({
                 variables: { channelId, body },
                 optimisticResponse: { sendMessage: optimistic },
                 update: (cache, { data }) => {
                   const newMsg = data?.sendMessage ?? optimistic;
-                  const vars = { channelId };
-                  const existing: any =
-                    cache.readQuery({ query: MESSAGES, variables: vars }) ??
-                    { messages: [] };
-                  if (
-                    existing.messages.some((m: any) => m.id === newMsg.id)
-                  )
-                    return;
-
-                  cache.writeQuery({
+                  const vars: MessagesVariables = { channelId };
+                  const existing =
+                    cache.readQuery<MessagesQuery, MessagesVariables>({
+                      query: MESSAGES,
+                      variables: vars,
+                    })?.messages ?? [];
+                  if (existing.some((m) => m.id === newMsg.id)) return;
+                  cache.writeQuery<MessagesQuery, MessagesVariables>({
                     query: MESSAGES,
                     variables: vars,
-                    data: { messages: [...existing.messages, newMsg] },
+                    data: { messages: [...existing, newMsg] },
                   });
                 },
               });
@@ -155,17 +244,59 @@ export default function ChatPanel({ projectId }: { projectId: string }) {
               scrollToEnd();
             }}
           >
-            <input
+            <Input
               name="body"
               placeholder="Message…"
-              className="flex-1 border px-3 py-2"
+              className="flex-1"
+              autoComplete="off"
+              aria-label="Message input"
             />
-            <button className="px-3 py-2 bg-black text-white rounded">
-              Send
-            </button>
+            <Button type="submit">Send</Button>
           </form>
         )}
-      </section>
+      </Card>
+    </div>
+  );
+}
+
+function EmptyState({ emoji, title, subtitle }: { emoji: string; title: string; subtitle: string }) {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="text-4xl mb-4">{emoji}</div>
+        <div className="text-lg font-medium text-gray-900 mb-2">{title}</div>
+        <div className="text-sm text-gray-500">{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+function MessageRow({ msg }: { msg: ChatMessage }) {
+  const authorLabel = msg.author?.name || msg.author?.email || 'unknown';
+
+  const time = useMemo(() => {
+    try {
+      return new Date(msg.createdAt).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  }, [msg.createdAt]);
+
+  return (
+    <div className="flex space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+      <Avatar name={authorLabel} size="sm" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center space-x-2 mb-1">
+          <span className="font-medium text-gray-900">{authorLabel}</span>
+          <span className="text-xs text-gray-500">{time}</span>
+        </div>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+          {msg.body}
+        </div>
+      </div>
     </div>
   );
 }

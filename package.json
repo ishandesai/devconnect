@@ -10,7 +10,8 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "collab": "tsx scripts/collab.ts"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx,md,css,json}": [
@@ -22,7 +23,10 @@
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^19.8.1",
-    "@types/node": "^20",
+    "@eslint/js": "^9.35.0",
+    "@next/eslint-plugin-next": "^15.5.3",
+    "@types/node": "^20.19.13",
+    "@types/randomcolor": "^0.5.9",
     "commitlint": "^19.8.1",
     "eslint": "^9.35.0",
     "eslint-config-next": "^15.5.2",
@@ -35,13 +39,24 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-scope": "^8.4.0",
+    "eslint-visitor-keys": "^4.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
     "prettier": "^3.6.2",
     "tsx": "^4.20.5",
     "turbo": "^2.5.6",
     "typescript": "^5.9.2",
-    "eslint-scope": "^8.4.0",
-    "eslint-visitor-keys": "^4.2.1"
+    "typescript-eslint": "^8.44.0",
+    "ws": "^8.18.3"
+  },
+  "dependencies": {
+    "@types/ws": "^8.18.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "@eslint/eslintrc>ajv": "6.12.6",
+      "ajv": "8.17.1"
+    }
   }
 }

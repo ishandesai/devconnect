@@ -1,9 +1,10 @@
-import { use } from 'react';
+// Server Component (no "use client")
 import TaskBoard from '@/components/TaskBoard';
 
-type Params = { teamId: string; projectId: string };
-
-export default function Tasks({ params }: { params: Promise<Params> }) {
-  const { projectId } = use(params);
-  return <TaskBoard projectId={projectId} />;
+export default function TasksPage({
+  params,
+}: {
+  params: { teamId: string; projectId: string };
+}) {
+  return <TaskBoard projectId={params.projectId} />;
 }

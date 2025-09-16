@@ -1,7 +1,11 @@
-import type { NextConfig } from "next";
+// next.config.ts
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    // disable this while debugging liveblocks
+    optimizePackageImports: undefined,
+  },
 };
 
 export default nextConfig;

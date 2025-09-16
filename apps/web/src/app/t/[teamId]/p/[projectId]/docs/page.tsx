@@ -1,18 +1,24 @@
 'use client';
+
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { DocList } from '@/components/DocList';
-import { DocEditor } from '@/components/DocEditor';
-import { use } from 'react';
+import { CollaborativeEditor } from '@/components/CollaborativeEditor';
 
-type Params = { teamId: string; projectId: string };
+export default function Docs() {
+  const { projectId } = useParams<{ teamId: string; projectId: string }>();
+  const [openId, setOpenId] = useState<string | null>(null);
 
-export default function Docs({ params }:{ params: Promise<Params> }){
-    const [openId, setOpenId] = useState<string | null>(null);
-    const { projectId } = use(params);
   return (
     <div className="flex h-full">
       <DocList projectId={projectId} onOpen={setOpenId} />
-      <DocEditor docId={openId} />
+      <div className="flex-1">
+        {openId ? (
+          <CollaborativeEditor docId={openId} />
+        ) : (
+          <p className="p-4 text-sm text-gray-500">Select a document</p>
+        )}
+      </div>
     </div>
   );
 }
