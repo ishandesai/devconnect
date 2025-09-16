@@ -1,6 +1,7 @@
+// components/DocList.tsx
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client/react';
 import {
   DOCUMENTS,
@@ -11,10 +12,12 @@ import {
   type CreateDocumentVariables,
 } from '@/lib/graphql';
 
-import { formatRelativeTime } from '@/lib/design-system';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { formatRelativeTime } from '@/lib/design-system';
+
+type Doc = DocumentsQuery['documents'][number];
 
 interface DocListProps {
   projectId: string;
@@ -23,67 +26,77 @@ interface DocListProps {
 }
 
 export function DocList({ projectId, onOpen, selectedDocId }: DocListProps) {
-  const { data, loading, error } = useQuery<DocumentsQuery, DocumentsVariables>(
-    DOCUMENTS,
-    { variables: { projectId } }
-  );
-
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // Load docs
+  const { data, loading, error } = useQuery<DocumentsQuery, DocumentsVariables>(
+    DOCUMENTS,
+    {
+      variables: { projectId },
+      fetchPolicy: 'cache-and-network',
+    }
+  );
+
+  const docs = useMemo(
+    () =>
+      (data?.documents ?? [])
+        .slice()
+        .sort(
+          (a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)
+        ),
+    [data?.documents]
+  );
+
+  // Create doc
   const [createDoc, { loading: creating }] = useMutation<
     CreateDocumentMutation,
     CreateDocumentVariables
   >(CREATE_DOCUMENT);
 
-  const documents = (data?.documents ?? [])
-    .slice()
-    .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt));
-
   const handleCreateDoc = async () => {
     setCreateError(null);
-    const raw = (prompt('Document title?') || 'Untitled').trim();
-    if (!raw) return;
+    const title = (prompt('Document title?') || 'Untitled').trim();
+    if (!title) return;
 
-    const title = raw;
     const tempId = `temp-${Date.now()}`;
-    const nowIso = new Date().toISOString();
-
-    const optimisticDoc: CreateDocumentMutation['createDocument'] & {
-      __typename: 'Document';
-    } = {
-      __typename: 'Document',
+    const optimistic = {
       id: tempId,
       title,
-      updatedAt: nowIso,
+      updatedAt: new Date().toISOString(),
+      __typename: 'Document' as const,
     };
 
     try {
       await createDoc({
-        variables: { projectId, title },
-        optimisticResponse: { createDocument: optimisticDoc },
+        variables: { input: { projectId, title } },
+        optimisticResponse: { createDocument: optimistic },
         update: (cache, { data }) => {
-          const newDoc = data?.createDocument ?? optimisticDoc;
+          const created = data?.createDocument ?? optimistic;
 
           const vars: DocumentsVariables = { projectId };
-          const existing =
+          const prev =
             cache.readQuery<DocumentsQuery, DocumentsVariables>({
               query: DOCUMENTS,
               variables: vars,
             })?.documents ?? [];
 
-          if (existing.some((d) => d.id === newDoc.id)) return;
+          // Replace temp with server doc; dedupe if user double-clicks
+          const withoutTemp = prev.filter((d) => d.id !== tempId);
+          const withoutDup = withoutTemp.filter((d) => d.id !== created.id);
+          const next = [created, ...withoutDup].sort(
+            (a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)
+          );
 
           cache.writeQuery<DocumentsQuery, DocumentsVariables>({
             query: DOCUMENTS,
             variables: vars,
-            data: { documents: [newDoc, ...existing] },
+            data: { documents: next },
           });
         },
       });
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : 'Failed to create document';
-      setCreateError(msg);
+    } catch (e: any) {
+      setCreateError(e?.message || 'Failed to create document');
+      // Apollo rolls back optimistic on error, so no manual revert needed
     }
   };
 
@@ -94,12 +107,7 @@ export function DocList({ projectId, onOpen, selectedDocId }: DocListProps) {
           <h2 className="text-xl font-bold text-gray-900">Documents</h2>
           <p className="text-sm text-gray-600 mt-1">Collaborative editing</p>
         </div>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={handleCreateDoc}
-          disabled={creating}
-        >
+        <Button size="sm" variant="primary" onClick={handleCreateDoc} disabled={creating}>
           {creating ? 'Creating…' : '+ New Doc'}
         </Button>
       </div>
@@ -116,11 +124,11 @@ export function DocList({ projectId, onOpen, selectedDocId }: DocListProps) {
         </div>
       ) : error ? (
         <div className="text-sm text-red-600 text-center py-8">
-          Failed to load documents
+          {error.message || 'Failed to load documents'}
         </div>
       ) : (
         <div className="space-y-3">
-          {documents.map((doc) => (
+          {docs.map((doc) => (
             <Card
               key={doc.id}
               variant={selectedDocId === doc.id ? 'elevated' : 'default'}
@@ -147,7 +155,7 @@ export function DocList({ projectId, onOpen, selectedDocId }: DocListProps) {
             </Card>
           ))}
 
-          {documents.length === 0 && (
+          {docs.length === 0 && (
             <Card variant="flat" className="p-8 text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">📄</span>

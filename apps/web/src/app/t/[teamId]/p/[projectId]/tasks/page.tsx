@@ -1,9 +1,10 @@
-import TaskBoard from '@/components/TaskBoard';
+// app/t/[teamId]/p/[projectId]/tasks/page.tsx
+import TaskBoard from '@/components/TaskBoard'
+import type { ParamsPromise } from '@/types/route'
 
-export default function TasksPage({
-  params,
-}: {
-  params: { teamId: string; projectId: string };
-}) {
-  return <TaskBoard projectId={params.projectId} />;
+type RouteParams = { teamId: string; projectId: string }
+
+export default async function TasksPage({ params }: ParamsPromise<RouteParams>) {
+  const { projectId } = await params
+  return <TaskBoard projectId={projectId} />
 }

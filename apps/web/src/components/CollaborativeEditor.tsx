@@ -1,17 +1,30 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+// Editor-only CSS (kept local so it doesn't block other routes)
+import '@liveblocks/react-ui/styles.css';
+import '@liveblocks/react-tiptap/styles.css';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClientSideSuspense, RoomProvider } from '@liveblocks/react/suspense';
-import {
-  useLiveblocksExtension,
-  FloatingToolbar,
-} from '@liveblocks/react-tiptap';
+import { useLiveblocksExtension, FloatingToolbar } from '@liveblocks/react-tiptap';
 import { useEditor, EditorContent } from '@tiptap/react';
 import type { JSONContent } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
+
+// Trimmed Tiptap extensions (lighter than StarterKit)
+import Doc from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+import Bold from '@tiptap/extension-bold';
+import Italic from '@tiptap/extension-italic';
+import Strike from '@tiptap/extension-strike';
+import Heading from '@tiptap/extension-heading';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
+import Blockquote from '@tiptap/extension-blockquote';
+import CodeBlock from '@tiptap/extension-code-block';
 
 import { useMutation, useQuery } from '@apollo/client/react';
-
 import { LiveList, LiveMap } from '@liveblocks/client';
 import { useOthers, useUpdateMyPresence } from '@liveblocks/react';
 
@@ -29,14 +42,12 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Avatar } from '@/components/ui/Avatar';
 
-export function CollaborativeEditor({ docId }: { docId: string }) {
+// Export default so next/dynamic can import it directly
+export default function CollaborativeEditor({ docId }: { docId: string }) {
   return (
     <RoomProvider
       id={`doc:${docId}`}
-      initialPresence={{
-        cursor: null,
-        selection: null,
-      }}
+      initialPresence={{ cursor: null, selection: null }}
       initialStorage={{
         docTitle: '',
         outline: new LiveList<{ id: string; text: string }>([]),
@@ -57,21 +68,28 @@ export function CollaborativeEditor({ docId }: { docId: string }) {
 }
 
 function EditorInner({ docId }: { docId: string }) {
-  const { data, loading } = useQuery<DocumentQuery, DocumentVariables>(
-    DOCUMENT,
-    {
-      variables: { id: docId },
-    }
-  );
-  const [save] = useMutation<
-    UpdateDocumentContentMutation,
-    UpdateDocumentContentVariables
-  >(UPDATE_DOCUMENT_CONTENT);
+  const { data, loading } = useQuery<DocumentQuery, DocumentVariables>(DOCUMENT, {
+    variables: { id: docId },
+  });
 
+  const [save] = useMutation<UpdateDocumentContentMutation, UpdateDocumentContentVariables>(
+    UPDATE_DOCUMENT_CONTENT
+  );
+
+  // Show presence immediately
   const updateMyPresence = useUpdateMyPresence();
   useEffect(() => {
     updateMyPresence({});
   }, [updateMyPresence]);
+
+  // Close resources more cleanly on pagehide (slightly better for bfcache in some browsers)
+  useEffect(() => {
+    const onPageHide = () => {
+      // Liveblocks RoomProvider handles teardown; this hook is just a nudge
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => window.removeEventListener('pagehide', onPageHide);
+  }, []);
 
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -81,36 +99,62 @@ function EditorInner({ docId }: { docId: string }) {
 
   const liveblocks = useLiveblocksExtension();
 
+  // Build extensions only once (and when liveblocks changes)
+  const extensions = useMemo(
+    () => [
+      Doc,
+      Paragraph,
+      Text,
+      Bold,
+      Italic,
+      Strike,
+      Heading.configure({ levels: [1, 2, 3] }),
+      BulletList,
+      OrderedList,
+      ListItem,
+      Blockquote,
+      CodeBlock,
+      liveblocks,
+    ],
+    [liveblocks]
+  );
+
   const editor = useEditor({
-    extensions: [StarterKit.configure({ history: false }), liveblocks],
+    extensions,
     content: '', // set after query resolves
     autofocus: true,
+    editorProps: {
+      attributes: {
+        class: 'prose max-w-none p-8 min-h-[70vh] focus:outline-none',
+      },
+    },
   });
 
+  // Load initial content
   useEffect(() => {
     if (!editor) return;
-    const raw = data?.document?.content; // schema says non-null string; undefined until data loads
+    const raw = data?.document?.content; // string | undefined
     if (typeof raw === 'string') {
       try {
-        const parsed = (
-          raw.trim() ? JSON.parse(raw) : { type: 'doc', content: [] }
-        ) as JSONContent;
+        const parsed = (raw.trim() ? JSON.parse(raw) : { type: 'doc', content: [] }) as JSONContent;
         editor.commands.setContent(parsed, false);
         lastSavedJsonRef.current = JSON.stringify(parsed);
       } catch {
-        editor.commands.setContent({ type: 'doc', content: [] }, false);
-        lastSavedJsonRef.current = JSON.stringify({ type: 'doc', content: [] });
+        const empty = { type: 'doc', content: [] };
+        editor.commands.setContent(empty, false);
+        lastSavedJsonRef.current = JSON.stringify(empty);
       }
     }
   }, [editor, data?.document?.content]);
 
-  const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Save on updates (debounced)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!editor) return;
 
     const onUpdate = () => {
-      if (tRef.current) clearTimeout(tRef.current);
-      tRef.current = setTimeout(async () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
         try {
           const jsonStr = JSON.stringify(editor.getJSON());
           if (jsonStr === lastSavedJsonRef.current) return;
@@ -130,7 +174,7 @@ function EditorInner({ docId }: { docId: string }) {
     editor.on('update', onUpdate);
     return () => {
       editor.off('update', onUpdate);
-      if (tRef.current) clearTimeout(tRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [editor, save, docId]);
 
@@ -152,9 +196,7 @@ function EditorInner({ docId }: { docId: string }) {
               <h2 className="text-2xl font-bold text-gray-900">
                 {data?.document?.title || 'Untitled Document'}
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Collaborative document editor
-              </p>
+              <p className="text-sm text-gray-500 mt-1">Collaborative document editor</p>
             </div>
 
             {others.length > 0 && (
@@ -164,11 +206,7 @@ function EditorInner({ docId }: { docId: string }) {
                 </span>
                 <div className="flex -space-x-1">
                   {others.slice(0, 3).map((other) => (
-                    <Avatar
-                      key={other.connectionId}
-                      name="Anonymous"
-                      size="sm"
-                    />
+                    <Avatar key={other.connectionId} name="Anonymous" size="sm" />
                   ))}
                   {others.length > 3 && (
                     <div className="w-6 h-6 rounded-full bg-gray-400 text-white text-xs flex items-center justify-center border-2 border-white">
@@ -226,35 +264,23 @@ function EditorInner({ docId }: { docId: string }) {
           <div className="w-px h-6 bg-gray-200" />
 
           <Button
-            variant={
-              editor.isActive('heading', { level: 1 }) ? 'primary' : 'ghost'
-            }
+            variant={editor.isActive('heading', { level: 1 }) ? 'primary' : 'ghost'}
             size="sm"
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           >
             H1
           </Button>
           <Button
-            variant={
-              editor.isActive('heading', { level: 2 }) ? 'primary' : 'ghost'
-            }
+            variant={editor.isActive('heading', { level: 2 }) ? 'primary' : 'ghost'}
             size="sm"
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           >
             H2
           </Button>
           <Button
-            variant={
-              editor.isActive('heading', { level: 3 }) ? 'primary' : 'ghost'
-            }
+            variant={editor.isActive('heading', { level: 3 }) ? 'primary' : 'ghost'}
             size="sm"
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 3 }).run()
-            }
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           >
             H3
           </Button>
@@ -298,14 +324,11 @@ function EditorInner({ docId }: { docId: string }) {
       {/* Editor */}
       <div className="flex-1 min-h-0">
         <Card variant="elevated" className="h-full border-0">
-          <EditorContent
-            editor={editor}
-            className="prose max-w-none p-8 min-h-[70vh] focus:outline-none"
-          />
+          <EditorContent editor={editor} />
         </Card>
       </div>
 
-      {editor && <FloatingToolbar editor={editor} />}
+      {editor ? <FloatingToolbar editor={editor} /> : null}
     </div>
   );
 }

@@ -1,22 +1,16 @@
-import '@liveblocks/react-ui/styles.css';
-import '@liveblocks/react-tiptap/styles.css';
-import './globals.css';
+// app/layout.tsx
+import './globals.css'
+import Providers from './providers'
+import PerformanceMonitor from '../components/PerformanceMonitor'
+import { inter } from './fonts'
 
-import LBProvider from '@/lib/liveblocks';
-import Providers from './providers';
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
-        <LBProvider>
-          <Providers>{children}</Providers>
-        </LBProvider>
+      <body className={inter.className}>   {/* 👈 add the font class */}
+        <Providers>{children}</Providers>
+        <PerformanceMonitor />
       </body>
     </html>
-  );
+  )
 }

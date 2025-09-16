@@ -505,7 +505,7 @@ export const resolvers = {
         where: { taskId: t.id },
         include: { user: true },
       });
-      return rows.map((r) => r.user);
+      return rows.map((r: { user: unknown }) => r.user);
     },
   },
 };

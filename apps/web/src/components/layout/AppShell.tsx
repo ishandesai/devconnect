@@ -1,8 +1,12 @@
-'use client';
-import Link from 'next/link';
-import { ReactNode } from 'react';
-import { cn } from '@/lib/cn';
-import { TeamSelector } from '@/components/TeamSelector';
+// src/components/layout/AppShell.tsx
+// ⛔ no 'use client' — this is a Server Component
+
+import Link from 'next/link'
+import { Suspense, ReactNode } from 'react'
+import { cn } from '@/lib/cn'
+
+// Import the client component directly (its file should start with 'use client')
+import { TeamSelector } from '@/components/TeamSelector'
 
 export function Topbar() {
   return (
@@ -17,22 +21,31 @@ export function Topbar() {
               DevConnect
             </span>
           </Link>
-          <TeamSelector />
+
+          {/* Only this part hydrates; rest of the topbar is server-rendered */}
+          <Suspense
+            fallback={
+              <div className="w-40 h-9 rounded-lg bg-gray-100 animate-pulse" />
+            }
+          >
+            <TeamSelector />
+          </Suspense>
         </div>
+
         <nav className="flex items-center space-x-8">
           <Link
             href="/dashboard"
             className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors relative group"
           >
             Dashboard
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-200"></span>
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-200" />
           </Link>
           <Link
             href="/login"
             className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors relative group"
           >
             Login
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-200"></span>
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-200" />
           </Link>
           <Link
             href="/signup"
@@ -43,7 +56,7 @@ export function Topbar() {
         </nav>
       </div>
     </header>
-  );
+  )
 }
 
 export function Sidebar({
@@ -51,27 +64,25 @@ export function Sidebar({
   activePath,
   className,
 }: {
-  items: { href: string; label: string; icon?: string }[];
-  activePath?: string;
-  className?: string;
+  items: { href: string; label: string; icon?: string }[]
+  activePath?: string
+  className?: string
 }) {
   const getIcon = (label: string) => {
     switch (label.toLowerCase()) {
       case 'docs':
-        return '📄';
+        return '📄'
       case 'chat':
-        return '💬';
+        return '💬'
       case 'tasks':
-        return '📝';
+        return '📝'
       default:
-        return '📁';
+        return '📁'
     }
-  };
+  }
 
   return (
-    <aside
-      className={cn('w-72 border-r border-gray-200 bg-white p-6', className)}
-    >
+    <aside className={cn('w-72 border-r border-gray-200 bg-white p-6', className)}>
       <div className="mb-8">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
           Project Navigation
@@ -93,7 +104,7 @@ export function Sidebar({
                 </span>
                 <span>{item.label}</span>
                 {activePath === item.href && (
-                  <div className="ml-auto w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div className="ml-auto w-2 h-2 bg-blue-600 rounded-full" />
                 )}
               </Link>
             </li>
@@ -101,15 +112,15 @@ export function Sidebar({
         </ul>
       </div>
     </aside>
-  );
+  )
 }
 
 export function AppShell({
   sidebar,
   children,
 }: {
-  sidebar: ReactNode;
-  children: ReactNode;
+  sidebar: ReactNode
+  children: ReactNode
 }) {
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -121,5 +132,5 @@ export function AppShell({
         </main>
       </div>
     </div>
-  );
+  )
 }

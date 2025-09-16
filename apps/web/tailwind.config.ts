@@ -1,13 +1,12 @@
+// tailwind.config.ts
 import type { Config } from 'tailwindcss'
 import typography from '@tailwindcss/typography'
 
-const config = {
-  // make sure these match YOUR folder structure (you have `src/app/...`)
+export default {
   content: [
-    'src/app/**/*.{ts,tsx}',
-    'src/components/**/*.{ts,tsx}',
-    'app/**/*.{ts,tsx}',
-    'components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx,mdx}',
+    './components/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx,mdx}', // keep only if you really have ./src
   ],
   darkMode: ['class'],
   theme: {
@@ -21,12 +20,8 @@ const config = {
         primary: 'hsl(var(--primary))',
         primaryFg: 'hsl(var(--primary-fg))',
       },
-      boxShadow: {
-        soft: '0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06)',
-      },
+      boxShadow: { soft: '0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06)' },
     },
   },
   plugins: [typography],
 } satisfies Config
-
-export default config

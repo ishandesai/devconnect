@@ -1,38 +1,29 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const runtime = 'nodejs';
+// src/app/t/[teamId]/p/[projectId]/layout.tsx
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
 
-import { AppShell, Sidebar } from '@/components/layout/AppShell';
+import { AppShell, Sidebar } from '@/components/layout/AppShell'
 
-export default function ProjectLayout({
+type RouteParams = { teamId: string; projectId: string }
+
+export default async function ProjectLayout({
   params,
   children,
 }: {
-  params: { teamId: string; projectId: string }; // ⬅️ plain object
-  children: React.ReactNode;
+  params: Promise<RouteParams> // 👈 Next 15 types expect a Promise here
+  children: React.ReactNode
 }) {
-  const { teamId, projectId } = params;
+  const { teamId, projectId } = await params
 
   return (
     <AppShell
       sidebar={
         <Sidebar
           items={[
-            {
-              href: `/t/${teamId}/p/${projectId}/docs`,
-              label: 'Docs',
-              icon: '📄',
-            },
-            {
-              href: `/t/${teamId}/p/${projectId}/chat`,
-              label: 'Chat',
-              icon: '💬',
-            },
-            {
-              href: `/t/${teamId}/p/${projectId}/tasks`,
-              label: 'Tasks',
-              icon: '📝',
-            },
+            { href: `/t/${teamId}/p/${projectId}/docs`, label: 'Docs', icon: '📄' },
+            { href: `/t/${teamId}/p/${projectId}/chat`, label: 'Chat', icon: '💬' },
+            { href: `/t/${teamId}/p/${projectId}/tasks`, label: 'Tasks', icon: '📝' },
           ]}
         />
       }
@@ -50,5 +41,5 @@ export default function ProjectLayout({
         {children}
       </div>
     </AppShell>
-  );
+  )
 }
